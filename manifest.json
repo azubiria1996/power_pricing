@@ -1,0 +1,10 @@
+{
+  "domain": "power_pricing",
+  "name": "Power Pricing",
+  "version": "0.1.0",
+  "config_flow": true,
+  "documentation": "https://github.com/tu_usuario/power_pricing",
+  "requirements": [],
+  "codeowners": ["@tu_usuario"],
+  "iot_class": "cloud_polling"
+}

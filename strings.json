@@ -1,0 +1,72 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar Power Pricing",
+        "description": "Introduce un nombre para esta tarifa y selecciona el tipo.",
+        "data": {
+          "entry_name": "Nombre de la tarifa",
+          "type": "Tipo de tarifa"
+        }
+      },
+      "fixed": {
+        "title": "Tarifa fija",
+        "description": "Introduce el precio de la electricidad en {currency}.",
+        "data": {
+          "price": "Precio (€/kWh)"
+        }
+      },
+      "tou_blocks": {
+        "title": "Tarifa por tramos — número de tramos",
+        "description": "¿Cuántos tramos horarios tiene tu tarifa? (máximo 6)",
+        "data": {
+          "num_blocks": "Número de tramos"
+        }
+      },
+      "tou_block": {
+        "title": "Tramo {current} de {total}",
+        "description": "Define el horario y el precio de este tramo. Formato de hora: HH:MM",
+        "data": {
+          "name": "Nombre del tramo (opcional)",
+          "start": "Hora de inicio (HH:MM)",
+          "end": "Hora de fin (HH:MM)",
+          "price": "Precio (€/kWh)"
+        }
+      },
+      "pvpc": {
+        "title": "PVPC — fuente de datos",
+        "description": "Selecciona la fuente de los precios horarios PVPC.",
+        "data": {
+          "source": "Fuente de datos"
+        }
+      },
+      "indexed_base": {
+        "title": "Tarifa indexada — precio base",
+        "description": "Selecciona el mercado de referencia para el precio base.",
+        "data": {
+          "base": "Precio base"
+        }
+      },
+      "indexed_adjustments": {
+        "title": "Tarifa indexada — ajustes",
+        "description": "Fórmula aplicada: {formula}",
+        "data": {
+          "multiplier": "Multiplicador",
+          "fixed_markup": "Margen fijo (€/kWh)"
+        }
+      }
+    },
+    "error": {
+      "invalid_price": "El precio debe ser un número no negativo.",
+      "invalid_time_format": "Formato de hora inválido. Usa HH:MM (ej. 08:00).",
+      "start_equals_end": "La hora de inicio y de fin no pueden ser iguales.",
+      "multiplier_not_positive": "El multiplicador debe ser mayor que 0.",
+      "invalid_number": "Introduce un número válido.",
+      "already_configured": "Ya existe una tarifa con este nombre."
+    },
+    "abort": {
+      "already_configured": "Ya existe una entrada con este nombre.",
+      "unknown_tariff": "Tipo de tarifa no reconocido."
+    }
+  }
+}
