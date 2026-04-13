@@ -15,12 +15,12 @@ from .const import (
     CONF_END,
     CONF_ENTRY_NAME,
     CONF_FIXED_MARKUP,
+    CONF_GEO_ZONE,
     CONF_MULTIPLIER,
     CONF_NAME,
     CONF_NUM_BLOCKS,
     CONF_PARAMETERS,
     CONF_PRICE,
-    CONF_SOURCE,
     CONF_START,
     CONF_TARIFF,
     CONF_TYPE,
@@ -28,9 +28,9 @@ from .const import (
     DEFAULT_MULTIPLIER,
     DEFAULT_NUM_BLOCKS,
     DOMAIN,
+    GEO_ZONE_LABELS,
+    GEO_ZONE_PCB,
     INDEXED_BASE_LABELS,
-    PVPC_SOURCE_LABELS,
-    PVPC_SOURCE_OFFICIAL,
     TARIFF_FIXED,
     TARIFF_INDEXED,
     TARIFF_PVPC,
@@ -265,14 +265,15 @@ class PowerPricingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_pvpc(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Configuración de la fuente PVPC."""
+        """Configuración PVPC: solo zona geográfica. Sin token necesario."""
         if user_input is not None:
             return self._create_entry(
                 {
+                    CONF_GEO_ZONE: user_input[CONF_GEO_ZONE],
                     CONF_TARIFF: {
                         CONF_TYPE: TARIFF_PVPC,
-                        CONF_PARAMETERS: {CONF_SOURCE: user_input[CONF_SOURCE]},
-                    }
+                        CONF_PARAMETERS: {},
+                    },
                 }
             )
 
@@ -280,8 +281,8 @@ class PowerPricingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="pvpc",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SOURCE, default=PVPC_SOURCE_OFFICIAL): vol.In(
-                        PVPC_SOURCE_LABELS
+                    vol.Required(CONF_GEO_ZONE, default=GEO_ZONE_PCB): vol.In(
+                        GEO_ZONE_LABELS
                     ),
                 }
             ),
@@ -311,7 +312,7 @@ class PowerPricingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_indexed_adjustments(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Indexada paso 2: multiplicador y margen fijo."""
+        """Indexada paso 2: zona geográfica y ajustes de precio."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -322,25 +323,29 @@ class PowerPricingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors[CONF_MULTIPLIER] = "multiplier_not_positive"
             except ValueError:
                 errors["base"] = "invalid_number"
-            else:
-                if not errors:
-                    return self._create_entry(
-                        {
-                            CONF_TARIFF: {
-                                CONF_TYPE: TARIFF_INDEXED,
-                                CONF_PARAMETERS: {
-                                    CONF_BASE: self._indexed_base,
-                                    CONF_MULTIPLIER: multiplier,
-                                    CONF_FIXED_MARKUP: markup,
-                                },
-                            }
-                        }
-                    )
+
+            if not errors:
+                return self._create_entry(
+                    {
+                        CONF_GEO_ZONE: user_input[CONF_GEO_ZONE],
+                        CONF_TARIFF: {
+                            CONF_TYPE: TARIFF_INDEXED,
+                            CONF_PARAMETERS: {
+                                CONF_BASE: self._indexed_base,
+                                CONF_MULTIPLIER: multiplier,
+                                CONF_FIXED_MARKUP: markup,
+                            },
+                        },
+                    }
+                )
 
         return self.async_show_form(
             step_id="indexed_adjustments",
             data_schema=vol.Schema(
                 {
+                    vol.Required(CONF_GEO_ZONE, default=GEO_ZONE_PCB): vol.In(
+                        GEO_ZONE_LABELS
+                    ),
                     vol.Required(CONF_MULTIPLIER, default=DEFAULT_MULTIPLIER): vol.Coerce(float),
                     vol.Required(CONF_FIXED_MARKUP, default=DEFAULT_FIXED_MARKUP): vol.Coerce(float),
                 }

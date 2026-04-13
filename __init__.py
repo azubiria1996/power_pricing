@@ -1,19 +1,33 @@
 """Integración Power Pricing para Home Assistant."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from .const import DOMAIN
+from .coordinator import PowerPricingCoordinator
 
-# Plataformas que esta integración registrará
+_LOGGER = logging.getLogger(__name__)
+
 PLATFORMS: list[str] = ["sensor"]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Configura Power Pricing desde una config entry."""
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {}
+    coordinator = PowerPricingCoordinator(hass, entry)
+
+    # Primer refresco — lanza UpdateFailed si la API no responde
+    try:
+        await coordinator.async_config_entry_first_refresh()
+    except Exception as err:
+        raise ConfigEntryNotReady(
+            f"No se pudo obtener datos iniciales para '{entry.title}': {err}"
+        ) from err
+
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

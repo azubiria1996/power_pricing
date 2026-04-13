@@ -34,10 +34,10 @@
         }
       },
       "pvpc": {
-        "title": "PVPC — fuente de datos",
-        "description": "Selecciona la fuente de los precios horarios PVPC.",
+        "title": "PVPC — zona geográfica",
+        "description": "Los precios se obtienen automáticamente de Red Eléctrica de España. No necesitas ningún token.",
         "data": {
-          "source": "Fuente de datos"
+          "geo_zone": "Zona geográfica"
         }
       },
       "indexed_base": {
@@ -48,9 +48,10 @@
         }
       },
       "indexed_adjustments": {
-        "title": "Tarifa indexada — ajustes",
+        "title": "Tarifa indexada — zona y ajustes",
         "description": "Fórmula aplicada: {formula}",
         "data": {
+          "geo_zone": "Zona geográfica",
           "multiplier": "Multiplicador",
           "fixed_markup": "Margen fijo (€/kWh)"
         }

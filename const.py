@@ -63,13 +63,16 @@ CONF_EXTRA_COSTS: Final = "extra_costs"
 CONF_VALUE: Final = "value"
 
 # ---------------------------------------------------------------------------
-# PVPC / fuente de datos
+# PVPC / zona geográfica (sin token — fuente pública preciodelaluz.org)
 # ---------------------------------------------------------------------------
-CONF_SOURCE: Final = "source"
-PVPC_SOURCE_OFFICIAL: Final = "official"
+CONF_GEO_ZONE: Final = "geo_zone"
 
-PVPC_SOURCE_LABELS: Final = {
-    PVPC_SOURCE_OFFICIAL: "Oficial (REE - Red Eléctrica de España)",
+GEO_ZONE_PCB: Final = "PCB"   # Península, Canarias y Baleares
+GEO_ZONE_CYM: Final = "CYM"   # Ceuta y Melilla
+
+GEO_ZONE_LABELS: Final = {
+    GEO_ZONE_PCB: "Península, Canarias y Baleares",
+    GEO_ZONE_CYM: "Ceuta y Melilla",
 }
 
 # ---------------------------------------------------------------------------
