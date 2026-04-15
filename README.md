@@ -1,7 +1,7 @@
 # ⚡ Power Pricing for Home Assistant
  
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.1.0-blue" />
+  <img src="https://img.shields.io/badge/version-1.0.1-blue" />
   <img src="https://img.shields.io/badge/HA-2024.1%2B-green" />
   <img src="https://img.shields.io/badge/license-MIT-lightgrey" />
   <img src="https://img.shields.io/badge/HACS-custom-orange" />
