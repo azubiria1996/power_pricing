@@ -1,6 +1,6 @@
 """Coordinator para Power Pricing.
 
-Fuente de datos PVPC/Indexada: api.preciodelaluz.org (sin token, datos de REE).
+Fuente de datos PVPC/Indexada: ESIOS/REE (widget público, sin token).
 Endpoint principal: GET /v1/prices/all?zone=PCB|CYM
 
 Responsabilidades:
@@ -43,11 +43,13 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-_API_BASE = "https://api.preciodelaluz.org/v1/prices"
-_API_ALL  = _API_BASE + "/all"
+# API pública de ESIOS sin token — widget endpoint
+_ESIOS_WIDGET = (
+    "https://api.esios.ree.es/archives/70/download_json"
+    "?locale=es&date={date}"
+)
 _TIMEZONE = ZoneInfo("Europe/Madrid")
 
-# Actualizamos cada hora. REE publica precios del día siguiente ~20:15h.
 UPDATE_INTERVAL = timedelta(minutes=60)
 
 
@@ -135,7 +137,7 @@ class PowerPricingCoordinator(DataUpdateCoordinator):
         return None
 
     # ------------------------------------------------------------------
-    # PVPC / INDEXADA — api.preciodelaluz.org (sin token)
+    # PVPC / INDEXADA — ESIOS/REE widget (sin token)
     # ------------------------------------------------------------------
 
     async def _update_from_api(self) -> dict[str, Any]:
@@ -145,7 +147,7 @@ class PowerPricingCoordinator(DataUpdateCoordinator):
 
         if not today_raw:
             raise UpdateFailed(
-                "No se obtuvieron precios de hoy desde api.preciodelaluz.org. "
+                "No se obtuvieron precios de hoy desde ESIOS/REE. "
                 "Comprueba la conexión a internet."
             )
 
@@ -185,10 +187,10 @@ class PowerPricingCoordinator(DataUpdateCoordinator):
         }
 
     async def _fetch_day(self, day: Any) -> dict[int, float] | None:
-        """Descarga precios de un día desde preciodelaluz.org.
+        """Descarga precios PVPC de ESIOS (widget público, sin token).
 
-        Devuelve {hora_int: precio_€/kWh} o None si no hay datos todavía.
-        La API ya devuelve los valores en €/kWh (no en €/MWh).
+        Endpoint: archives/70/download_json — devuelve PVPC en €/MWh.
+        Convertimos a €/kWh dividiendo entre 1000.
         """
         date_str  = day.strftime("%Y-%m-%d")
         cache_key = f"{date_str}_{self._zone}"
@@ -197,39 +199,51 @@ class PowerPricingCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Cache hit: %s", cache_key)
             return self._cache[cache_key]
 
-        url = f"{_API_ALL}?zone={self._zone}&date={date_str}"
+        url = _ESIOS_WIDGET.format(date=date_str)
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "HomeAssistant/PowerPricing",
+        }
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     url,
-                    headers={"Accept": "application/json"},
+                    headers=headers,
                     timeout=aiohttp.ClientTimeout(total=20),
                 ) as resp:
                     if resp.status == 404:
-                        # Datos de mañana aún no publicados (normal antes de las ~20:15)
                         _LOGGER.debug("Precios de %s aún no disponibles.", date_str)
                         return None
                     if resp.status != 200:
                         _LOGGER.warning(
-                            "preciodelaluz.org respondió HTTP %d para %s",
-                            resp.status, date_str,
+                            "ESIOS respondió HTTP %d para %s", resp.status, date_str
                         )
                         return None
-                    raw: dict = await resp.json()
+                    raw: dict = await resp.json(content_type=None)
 
         except aiohttp.ClientError as err:
             raise UpdateFailed(
-                f"Error de red al contactar preciodelaluz.org: {err}"
+                f"Error de red al contactar ESIOS: {err}"
             ) from err
 
-        # La respuesta es {"00": {"price": 0.123, "is-cheap": true, ...}, "01": ...}
+        # Respuesta: {"PVPC": [{"Hora": "00-01", "PCB": "120,50", ...}, ...]}
+        pvpc_list: list = raw.get("PVPC", [])
+        if not pvpc_list:
+            _LOGGER.debug("ESIOS no devolvió datos PVPC para %s", date_str)
+            return None
+
+        zone_key = "CYM" if self._zone == "CYM" else "PCB"
         prices: dict[int, float] = {}
-        for key, entry in raw.items():
+        for entry in pvpc_list:
             try:
-                prices[int(key)] = float(entry["price"])
-            except (ValueError, KeyError, TypeError) as err:
-                _LOGGER.warning("Entrada ignorada '%s': %s", key, err)
+                hora_str: str = entry.get("Hora", "")   # "00-01", "01-02", ...
+                hour = int(hora_str.split("-")[0])
+                raw_val: str = entry.get(zone_key, "0").replace(",", ".")
+                price_kwh = round(float(raw_val) / 1000.0, 6)  # €/MWh → €/kWh
+                prices[hour] = price_kwh
+            except (ValueError, KeyError, TypeError, IndexError) as err:
+                _LOGGER.warning("Entrada ESIOS ignorada %s: %s", entry, err)
 
         if prices:
             self._cache[cache_key] = prices
